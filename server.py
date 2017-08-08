@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import argparse
 import yaml
-from aiohttp import web, ClientSession, TCPConnector
+from aiohttp import web, ClientSession, TCPConnector, BasicAuth
 import async_timeout
 
 parser = argparse.ArgumentParser(description='Prometheus rabbitmq exporter.')
@@ -27,13 +27,41 @@ def get_config() -> dict:
         config_data = yaml.load(f)
     return config_data
 
+async def get_queues(target: dict) -> list:
+    queues = []
+
+    target_url = target['url']
+    auth = BasicAuth(login=target['login'], password=target['password'])
+
+    connector = TCPConnector(verify_ssl=False)
+    async with ClientSession(connector=connector) as session:
+        url = target_url + '/api/queues'
+        with async_timeout.timeout(10):
+            async with session.get(url, auth=auth) as response:
+                result = await response.json()
+                for item in result:
+                    queues.append({
+                        'name': item['name'],
+                        'messages': item['messages']
+                    })
+
+    return queues
 
 async def index(request):
-    return web.Response(text='<h1>RabbitMQ exporter</h1><p><a href="/metrics">Metrics</a><p>')
+    return web.Response(text='<h1>RabbitMQ exporter</h1><p><a href="/metrics">Metrics</a><p>', content_type='text/html')
 
 async def metrics(request):
+    config = get_config()
+
     result = '# HELP rabbitmq_queues_messages Displays queue messages count\n'
     result += '# TYPE rabbitmq_queues_messages gauge\n'
+
+    for target in config.get('targets', []):
+        queues = await get_queues(target=target)
+        for queue in queues:
+            result += 'rabbitmq_queues_messages{target="%s",name="%s",queue="%s"} %s\n' % (
+                target['url'], target['name'], queue['name'], queue['messages']
+            )
 
     return web.Response(text=result)
 

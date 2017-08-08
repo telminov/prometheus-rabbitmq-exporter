@@ -4,7 +4,7 @@ import server
 
 def test_get_config():
     config_data = server.get_config()
-    assert config_data['targets'][0]['address'] == 'localhost:15672'
+    assert config_data['targets'][0]['url'] == 'http://localhost:15672'
     assert config_data['targets'][0]['login'] == 'guest'
     assert config_data['targets'][0]['password'] == 'guest'
 

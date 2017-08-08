@@ -1,5 +1,6 @@
 targets:
-  - address: localhost:15672
+  - name: localhost
+    url: http://localhost:15672
     login: guest
     password: guest
 
