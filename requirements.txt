@@ -1,0 +1,3 @@
+aiohttp==2.2.5
+pyyaml==3.12
+pytest-aiohttp==0.1.3
