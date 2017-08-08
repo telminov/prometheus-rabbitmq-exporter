@@ -28,24 +28,28 @@ def get_config() -> dict:
     return config_data
 
 async def get_queues(target: dict) -> list:
-    queues = []
+    try:
+        queues = []
 
-    target_url = target['url']
-    auth = BasicAuth(login=target['login'], password=target['password'])
+        target_url = target['url']
+        auth = BasicAuth(login=target['login'], password=target['password'])
 
-    connector = TCPConnector(verify_ssl=False)
-    async with ClientSession(connector=connector) as session:
-        url = target_url + '/api/queues'
-        with async_timeout.timeout(10):
-            async with session.get(url, auth=auth) as response:
-                result = await response.json()
-                for item in result:
-                    queues.append({
-                        'name': item['name'],
-                        'messages': item['messages']
-                    })
+        connector = TCPConnector(verify_ssl=False)
+        async with ClientSession(connector=connector) as session:
+            url = target_url + '/api/queues'
+            with async_timeout.timeout(10):
+                async with session.get(url, auth=auth) as response:
+                    result = await response.json()
+                    for item in result:
+                        queues.append({
+                            'name': item['name'],
+                            'messages': item['messages']
+                        })
 
-    return queues
+        return queues
+    except Exception as ex:
+        print(ex)
+        return []
 
 async def index(request):
     return web.Response(text='<h1>RabbitMQ exporter</h1><p><a href="/metrics">Metrics</a><p>', content_type='text/html')
